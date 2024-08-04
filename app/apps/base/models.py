@@ -7,6 +7,8 @@ from sqlalchemy.ext.declarative import as_declarative, declared_attr
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column
 from sqlalchemy.sql import func
 
+import app.apps.base.services as services
+
 # Base = declarative_base()
 
 
@@ -131,3 +133,72 @@ class ImmutableBusinessEntity(ImmutableBase, BusinessEntity):
 
 class ImmutableBusinessOwnedEntity(ImmutableBase, BusinessOwnedEntity):
     __abstract__ = True
+
+
+#### END OF BASE MODELS ####
+
+#### Basket Model ####
+
+class Basket(BusinessOwnedEntity):
+    __tablename__ = "basket"
+    """the model is a mutable table based on class BusinessOwnedEntity.
+    if the status is closed, reserved or cancelled, the record couldn't be edited. it allowd to be edited if and only if the status is open.
+    """
+    status = mapped_column(sa.String(20), nullable=False)
+    invoice_id = mapped_column(sa.UUID, nullable=False)
+    currency = mapped_column(sa.String(10), nullable=False)
+    items = mapped_column(sa.JSON, nullable=False)
+    amount = mapped_column(sa.Integer, nullable=False)
+    checkout_at = mapped_column(sa.DateTime, nullable=False)
+
+    def __init__(
+        self,
+        business_id: uuid.UUID,
+        user_id: uuid.UUID,
+        status: str,
+        invoice_id: uuid.UUID,
+        currency: str,
+        items: dict[str, int],
+        amount: int,
+        checkout_at: datetime,
+    ):
+        super().__init__(business_id=business_id, user_id=user_id)
+        self.status = status
+        self.invoice_id = invoice_id
+        self.currency = currency
+        self.items = items
+        self.amount = amount
+        self.checkout_at = checkout_at
+
+    @validator("status")
+    def validate_status(cls, value):
+        allowed_statuses = ["open", "reserved", "closed", "cancelled"]
+        if value not in allowed_statuses:
+            raise ValueError(f"Invalid status: {value}")
+        return value
+
+    @validator("invoice_id")
+    def validate_invoice_id(cls, value):
+        if not isinstance(value, uuid.UUID):
+            raise ValueError(f"Invalid invoice_id: {value}")
+        return value
+
+    @validator("currency")
+    def validate_currency(cls, value):
+        # TODO: validate currency
+        return value
+
+    @validator("items")
+    def validate_items(cls, value):
+        # TODO: validate items
+        return value
+
+    @validator("amount")
+    def validate_amount(cls, value):
+        # TODO: validate amount
+        return value
+
+    @validator("checkout_at")
+    def validate_checkout_at(cls, value):
+        # TODO: validate checkout_at
+        return value
